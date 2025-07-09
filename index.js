@@ -58,8 +58,20 @@ async function atualizarStatus() {
   }
 }
 
-client.once('ready', () => {
+client.once('ready', async () => {
   console.log(`✅ Bot online como ${client.user.tag}`);
+
+  try {
+    const canal = await client.channels.fetch(canalStatusId);
+    const mensagens = await canal.messages.fetch({ limit: 10 });
+    const mensagemBot = mensagens.find(msg => msg.author.id === client.user.id);
+    if (mensagemBot) {
+      mensagemId = mensagemBot.id;
+    }
+  } catch (err) {
+    console.error('Erro ao buscar mensagem antiga:', err);
+  }
+
   atualizarStatus();
   setInterval(atualizarStatus, 5 * 60 * 1000);
 });
