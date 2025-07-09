@@ -16,7 +16,7 @@ async function atualizarStatus() {
     const canal = await client.channels.fetch(canalStatusId);
 
     const embed = new EmbedBuilder()
-      .setTitle('🟢 Servidor AllenCraft Online!')
+      .setTitle('🟢 Servidor Minecraft Online!')
       .setColor('#00FF00')
       .addFields(
         { name: 'Jogadores Online', value: `${resposta.players.online} / ${resposta.players.max}`, inline: true },
