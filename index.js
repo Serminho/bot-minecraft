@@ -1,3 +1,17 @@
+// Servidor Web para manter o bot ativo no Render
+const express = require('express');
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+app.get('/', (req, res) => {
+  res.send('Bot está online! 👾');
+});
+
+app.listen(PORT, () => {
+  console.log(`🌐 Servidor web rodando na porta ${PORT}`);
+});
+
+// Bot Discord
 const { Client, GatewayIntentBits, EmbedBuilder } = require('discord.js');
 const { status } = require('minecraft-server-util');
 
@@ -10,6 +24,7 @@ const canalStatusId = '1391858985342075011';
 
 let mensagemId = null;
 
+// Função que atualiza o status do servidor Minecraft
 async function atualizarStatus() {
   try {
     const resposta = await status(IP_SERVIDOR, PORTA);
@@ -30,34 +45,34 @@ async function atualizarStatus() {
       const mensagem = await canal.messages.fetch(mensagemId);
       await mensagem.edit({ embeds: [embed] });
     } else {
-      const mensagem = await canal.send({ embeds: [embed] });
-      mensagemId = mensagem.id;
+      console.log('Nenhuma mensagem existente para editar (online). Ignorando envio.');
     }
   } catch (err) {
-    const canal = await client.channels.fetch(canalStatusId);
+    console.error('Servidor offline ou inacessível:', err);
 
-    const embedOffline = new EmbedBuilder()
-      .setTitle('🔴 Servidor Offline ou Inacessível!')
-      .setColor('#FF0000')
-      .setDescription('Não foi possível conectar ao servidor Minecraft.')
-      .setTimestamp()
-      .setFooter({ text: 'Última tentativa' });
+    try {
+      const canal = await client.channels.fetch(canalStatusId);
 
-    if (mensagemId) {
-      try {
+      const embedOffline = new EmbedBuilder()
+        .setTitle('🔴 Servidor Offline ou Inacessível!')
+        .setColor('#FF0000')
+        .setDescription('Não foi possível conectar ao servidor Minecraft.')
+        .setTimestamp()
+        .setFooter({ text: 'Última tentativa' });
+
+      if (mensagemId) {
         const mensagem = await canal.messages.fetch(mensagemId);
         await mensagem.edit({ embeds: [embedOffline] });
-      } catch {
-        const mensagem = await canal.send({ embeds: [embedOffline] });
-        mensagemId = mensagem.id;
+      } else {
+        console.log('Nenhuma mensagem existente para editar (offline). Ignorando envio.');
       }
-    } else {
-      const mensagem = await canal.send({ embeds: [embedOffline] });
-      mensagemId = mensagem.id;
+    } catch (e) {
+      console.error('Erro ao editar mensagem offline:', e);
     }
   }
 }
 
+// Evento quando o bot está pronto
 client.once('ready', async () => {
   console.log(`✅ Bot online como ${client.user.tag}`);
 
@@ -67,13 +82,16 @@ client.once('ready', async () => {
     const mensagemBot = mensagens.find(msg => msg.author.id === client.user.id);
     if (mensagemBot) {
       mensagemId = mensagemBot.id;
+      console.log(`📌 Mensagem antiga localizada: ${mensagemId}`);
+    } else {
+      console.log('⚠️ Nenhuma mensagem anterior do bot encontrada.');
     }
   } catch (err) {
     console.error('Erro ao buscar mensagem antiga:', err);
   }
 
   atualizarStatus();
-  setInterval(atualizarStatus, 5 * 60 * 1000);
+  setInterval(atualizarStatus, 5 * 60 * 1000); // Atualiza a cada 5 minutos
 });
 
 client.login(TOKEN);
